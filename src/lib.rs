@@ -6,7 +6,7 @@ use std::cell::Cell;
 use std::ffi::{c_void, CStr, CString};
 use std::mem::{size_of, ManuallyDrop, MaybeUninit};
 use std::os::raw::{c_char, c_int};
-use std::ptr::null_mut;
+use std::ptr::{null_mut, NonNull};
 use std::rc::Rc;
 use std::slice;
 use std::thread;
@@ -48,6 +48,13 @@ pub trait File {
     /// int (*xSectorSize)(sqlite3_file*);
     fn sector_size(&self) -> usize {
         1024
+    }
+
+    fn memory_map(&mut self, _offset: u64, _amount: u32) -> VfsResult<Option<NonNull<c_void>>> {
+        Ok(None)
+    }
+    fn memory_unmap(&mut self, _offset: u64, _ptr: NonNull<c_void>) -> VfsResult<()> {
+        unreachable!();
     }
 
     /// The xDeviceCharacteristics() method returns a bit vector describing behaviors of the underlying device:
@@ -859,29 +866,45 @@ mod io {
         p_file: *mut ffi::sqlite3_file,
         i_ofst: i64,
         i_amt: i32,
-        _pp: *mut *mut c_void,
+        pp: *mut *mut c_void,
     ) -> i32 {
         log::trace!("mem_fetch offset={} len={}", i_ofst, i_amt);
 
-        // reset last error
-        if file_state::<F>(p_file, true).is_err() {
-            return ffi::SQLITE_ERROR;
-        }
+        let state = match file_state::<F>(p_file, true) {
+            Ok(f) => f,
+            Err(_) => return ffi::SQLITE_ERROR,
+        };
 
-        ffi::SQLITE_ERROR
+        *pp = match state.file.memory_map(i_ofst as u64, i_amt as u32) {
+            Ok(p) => p.map(|x| x.as_ptr()).unwrap_or(std::ptr::null_mut()),
+            Err(err) => {
+                state.set_last_error(err);
+                return ffi::SQLITE_ERROR;
+            }
+        };
+
+        ffi::SQLITE_OK
     }
 
     /// Release a memory-mapped page.
-    pub unsafe extern "C" fn mem_unfetch<F>(
+    pub unsafe extern "C" fn mem_unfetch<F: File>(
         p_file: *mut ffi::sqlite3_file,
         i_ofst: i64,
-        _p_page: *mut c_void,
+        p_page: *mut c_void,
     ) -> i32 {
         log::trace!("mem_unfetch offset={}", i_ofst);
 
         // reset last error
-        if file_state::<F>(p_file, true).is_err() {
-            return ffi::SQLITE_ERROR;
+        let state = match file_state::<F>(p_file, true) {
+            Ok(f) => f,
+            Err(_) => return ffi::SQLITE_ERROR,
+        };
+
+        if let Some(page) = NonNull::new(p_page) {
+            if let Err(err) = state.file.memory_unmap(i_ofst as u64, page) {
+                state.set_last_error(err);
+                return ffi::SQLITE_ERROR;
+            };
         }
 
         ffi::SQLITE_OK

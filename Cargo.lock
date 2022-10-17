@@ -157,6 +157,16 @@ checksum = "eef78b64d87775463c549fbd80e19249ef436ea3bf1de2a1eb7e717ec7fab1e9"
 
 [[package]]
 name = "libsqlite3-sys"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0e9eb7b8e152b6a01be6a4a2917248381875758250dc3df5d46caf9250341dda"
+dependencies = [
+ "pkg-config",
+ "vcpkg",
+]
+
+[[package]]
+name = "libsqlite3-sys"
 version = "0.23.2"
 source = "git+https://github.com/trevyn/rusqlite?branch=wasm32-unknown-unknown#004cf263143e038f01e6022d8d5b81b9c621f89f"
 dependencies = [
@@ -334,7 +344,7 @@ dependencies = [
  "fallible-iterator",
  "fallible-streaming-iterator",
  "hashlink",
- "libsqlite3-sys",
+ "libsqlite3-sys 0.23.2",
  "memchr",
  "smallvec",
 ]
@@ -358,7 +368,7 @@ dependencies = [
  "anyhow",
  "env_logger",
  "getrandom",
- "libsqlite3-sys",
+ "libsqlite3-sys 0.9.1",
  "log",
  "parking_lot",
  "rand",
