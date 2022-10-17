@@ -12,6 +12,7 @@ use std::slice;
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
+use tracing as log;
 
 pub use libsqlite3_sys as ffi;
 

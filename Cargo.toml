@@ -12,9 +12,9 @@ keywords = ["sqlite", "vfs"]
 [dependencies]
 getrandom = { version="0.2.4", features = ["js"] }
 libsqlite3-sys = "*"
-log = "0.4"
 rand = "0.8"
 time = "0.3"
+tracing = "0.1.37"
 
 [dev-dependencies]
 anyhow = "1.0.56"
