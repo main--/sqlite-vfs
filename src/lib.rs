@@ -318,6 +318,7 @@ mod vfs {
         _p_out_flags: *mut c_int,
     ) -> c_int {
         if z_name.is_null() {
+            log::error!("Refusing to open temp file. make sure to set 'PRAGMA temp_store = MEMORY'!");
             return ffi::SQLITE_CANTOPEN;
         }
         let name = CStr::from_ptr(z_name).to_string_lossy();
