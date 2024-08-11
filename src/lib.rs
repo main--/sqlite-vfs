@@ -509,7 +509,7 @@ mod vfs {
             Err(_) => return ffi::SQLITE_DELETE,
         };
         state.last_error.take();
-        let bytes = slice::from_raw_parts_mut(z_buf_out, n_byte as usize);
+        let bytes = slice::from_raw_parts_mut(z_buf_out as *mut i8, n_byte as usize);
 
         let len = state.vfs.randomness(bytes);
         len as c_int
